@@ -124,10 +124,14 @@ export function App() {
     setBusy(true);
     setMsgs((m) => [...m, { id: seq.current++, role: "user", text: prompt }]);
     const startedAt = Date.now();
-    const turn = await runTurn(prompt, client.current);
-    const index = traces.length;
-    setTraces((t) => [...t, buildTrace(t.length, prompt, turn, startedAt)]);
-    setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn, traceIndex: index, finishedAt: Date.now() }]);
+    try {
+      const turn = await runTurn(prompt, client.current);
+      const index = traces.length;
+      setTraces((t) => [...t, buildTrace(t.length, prompt, turn, startedAt)]);
+      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn, traceIndex: index, finishedAt: Date.now() }]);
+    } catch (err) {
+      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: `Something went wrong while answering: ${err instanceof Error ? err.message : String(err)}` }]);
+    }
     setBusy(false);
   }
 
@@ -135,7 +139,14 @@ export function App() {
     setBusy(true);
     const started = performance.now();
     const args = { proposalId: proposal.id, decision };
-    const res = (await client.current.callTool("decide_proposal", args)) as { status: Decision["status"]; queued: number };
+    let res: { status: Decision["status"]; queued: number };
+    try {
+      res = (await client.current.callTool("decide_proposal", args)) as { status: Decision["status"]; queued: number };
+    } catch (err) {
+      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: `Could not apply the decision: ${err instanceof Error ? err.message : String(err)}` }]);
+      setBusy(false);
+      return;
+    }
     const json = JSON.stringify(res);
     const step: TraceStep = { id: Date.now(), tool: "decide_proposal", kind: "write", args, ok: true, startMs: 0, durationMs: Math.round((performance.now() - started) * 10) / 10, resultChars: json.length, preview: json };
     const msg = msgs.find((x) => x.id === msgId);
