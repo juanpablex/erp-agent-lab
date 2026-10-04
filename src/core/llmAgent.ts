@@ -17,7 +17,7 @@ export const MODELS = [
 ] as const;
 export const DEFAULT_MODEL: string = MODELS[0].id;
 
-const SYSTEM =
+export const SYSTEM =
   "You are the operations agent of Kettle Hill Roasters, a fictional coffee roastery. Answer questions about invoices, sales, coffee inventory and orders using the provided tools, and never invent numbers. " +
   "You can prepare payment reminders with propose_collection_reminders, but that only creates a proposal: tell the user a person must approve it in the card shown below your answer, and never claim reminders were sent. " +
   "Be concise. Amounts have no currency symbol.";
@@ -47,7 +47,7 @@ export const toolParams: Anthropic.Tool[] = MODEL_TOOLS.map((t) => {
 
 const MAX_ITERATIONS = 6;
 
-const TABLE_KEYS = ["invoices", "orders", "items", "topProducts"];
+export const TABLE_KEYS = ["invoices", "orders", "items", "topProducts"];
 
 /** Turns an SDK error into a message a visitor can act on. */
 export function explainError(err: unknown): string {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSample, TIERS, type Tier } from "../core/sampleAgent";
 import { DEFAULT_MODEL, MODELS } from "../core/llmAgent";
 
 export interface RealConfig {
@@ -37,13 +38,20 @@ export function clearConfig(): void {
   } catch { /* nothing to clear */ }
 }
 
-export function RealModelDialog({ current, remembered, onSave, onRemove, onClose }: {
+export function RealModelDialog({ current, remembered, accountActive, tier: initialTier, onUseAccount, onBackToScript, onSave, onRemove, onClose }: {
   current: RealConfig | null;
   remembered: boolean;
+  accountActive: boolean;
+  tier: Tier;
+  onUseAccount: (tier: Tier) => void;
+  onBackToScript: () => void;
   onSave: (c: RealConfig, remember: boolean) => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
+  const [accountOk, setAccountOk] = useState<boolean | null>(null);
+  const [tier, setTier] = useState<Tier>(initialTier);
+  useEffect(() => { getSample().then((s) => setAccountOk(!!s)); }, []);
   const [key, setKey] = useState(current?.apiKey ?? "");
   const [model, setModel] = useState(current?.model ?? DEFAULT_MODEL);
   const [remember, setRemember] = useState(remembered);
@@ -52,6 +60,23 @@ export function RealModelDialog({ current, remembered, onSave, onRemove, onClose
     <div className="dialog-back" role="dialog" aria-modal="true" aria-label="Use a real model">
       <form className="dialog" onSubmit={(e) => { e.preventDefault(); if (valid) onSave({ apiKey: key.trim(), model }, remember); }}>
         <h2>Use a real model</h2>
+        {accountOk && (
+          <section className="option">
+            <h3>Use my Claude account</h3>
+            <p className="note">No API key needed. Claude answers through your own Claude account and the usage counts against your plan. You will be asked to allow it the first time. Answers can take 30 to 90 seconds. It can only read the fictional data and propose reminders; sending still needs your click on Approve.</p>
+            <label>
+              Speed
+              <select value={tier} onChange={(e) => setTier(e.target.value as Tier)}>
+                {TIERS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+            </label>
+            <div className="dialog-actions">
+              {accountActive && <button type="button" onClick={onBackToScript}>Back to the script</button>}
+              <button type="button" className="primary" onClick={() => onUseAccount(tier)}>{accountActive ? "Keep using my account" : "Use my Claude account"}</button>
+            </div>
+          </section>
+        )}
+        {accountOk === false && (<>
         <p>
           Optional. A Claude model decides which tools to call, instead of the script. Requests go <strong>straight from your browser to the Anthropic API</strong>,
           using <strong>your own API key</strong>, so they are billed to your account. This site has no server and never sees the key.
@@ -79,6 +104,8 @@ export function RealModelDialog({ current, remembered, onSave, onRemove, onClose
           <button type="button" onClick={onClose}>Cancel</button>
           <button className="primary" disabled={!valid}>Save and use</button>
         </div>
+        </>)}
+        {accountOk && <div className="dialog-actions"><button type="button" onClick={onClose}>Close</button></div>}
       </form>
     </div>
   );

@@ -27,7 +27,7 @@ export interface TurnTrace {
   /** How long the turn waited for a human decision, when it had an approval step. */
   humanWaitMs?: number;
   /** Set when a real model answered: usage is reported by the API, not estimated. */
-  real?: { model: string; calls: number; cacheReadTokens: number };
+  real?: { model: string; calls: number; cacheReadTokens: number; /** false when the provider does not report token usage (Claude-account mode). */ reported?: boolean };
 }
 
 export function costOf(tokens: { input: number; output: number }): number {
@@ -56,6 +56,15 @@ export function buildRealTrace(index: number, prompt: string, turn: AgentTurn, s
   };
 }
 
+/** Trace for a turn answered through the viewer's Claude account: the platform does not report tokens, so none are shown. */
+export function buildAccountTrace(index: number, prompt: string, turn: AgentTurn, startedAt: number): TurnTrace {
+  return {
+    index, prompt, startedAt, durationMs: turn.durationMs, steps: turn.steps,
+    tokens: { input: 0, output: 0 }, costUsd: 0,
+    real: { model: "your Claude account", calls: 0, cacheReadTokens: 0, reported: false },
+  };
+}
+
 export function withDecision(trace: TurnTrace, step: TraceStep, humanWaitMs: number): TurnTrace {
   return { ...trace, steps: [...trace.steps, step], humanWaitMs };
 }
@@ -68,6 +77,8 @@ export interface ConversationSummary {
   costUsd: number;
   humanWaitMs: number;
   realTurns: number;
+  /** Real turns whose token usage was reported by an API (not the Claude-account mode). */
+  reportedTurns: number;
 }
 
 export function summarize(traces: TurnTrace[]): ConversationSummary {
@@ -81,5 +92,6 @@ export function summarize(traces: TurnTrace[]): ConversationSummary {
     costUsd: traces.reduce((a, t) => a + t.costUsd, 0),
     humanWaitMs: traces.reduce((a, t) => a + (t.humanWaitMs ?? 0), 0),
     realTurns: traces.filter((t) => t.real).length,
+    reportedTurns: traces.filter((t) => t.real && t.real.reported !== false).length,
   };
 }

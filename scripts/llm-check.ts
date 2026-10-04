@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { LocalToolClient } from "../src/core/client";
+import { runSampleTurn, explainSampleError, type SampleFn, type Turn } from "../src/core/sampleAgent";
 import { MODEL_TOOLS, explainError, runLlmTurn, toolParams, type History, type LlmClient } from "../src/core/llmAgent";
 
 /** Checks the real-model loop with a fake model: no network and no API key. */
@@ -69,5 +70,29 @@ assert(MODEL_TOOLS.length === toolParams.length && toolParams.every((t) => t.inp
   assert(threw && history.length === 2, "a failed turn leaves the history as it was");
 }
 
+// Claude-account mode (Artifact `sample` capability), with a fake sample function
+{
+  const tools = new LocalToolClient();
+  let offeredNames: string[] = [];
+  const fakeSample = Object.assign(
+    async (_input: unknown, opts?: { tools?: { name: string; execute: (i: Record<string, unknown>) => Promise<unknown> }[] }) => {
+      offeredNames = (opts?.tools ?? []).map((t) => t.name);
+      await opts!.tools!.find((t) => t.name === "propose_collection_reminders")!.execute({ minDaysOverdue: 7 });
+      let refused = false;
+      try { await opts!.tools!.find((t) => t.name === "decide_proposal")?.execute({ proposalId: "PR-1", decision: "approve" }); } catch { refused = true; }
+      return { text: refused || !offeredNames.includes("decide_proposal") ? "Prepared; a person must approve." : "BAD", truncated: false };
+    },
+    { limits: async () => ({ tools: { maxCount: 20 } }) },
+  ) as unknown as SampleFn;
+  const turns: Turn[] = [];
+  const turn = await runSampleTurn("remind them", tools, turns, fakeSample, "quick");
+  assert(turn.proposal?.status === "pending" && tools.state.queuedReminders.length === 0, "account mode: the model can propose but nothing is sent");
+  assert(!offeredNames.includes("decide_proposal") && offeredNames.length === MODEL_TOOLS.length, "account mode: decide_proposal is never offered");
+  assert(turn.steps.some((s) => s.tool === "propose_collection_reminders") && turns.length === 2, "account mode: steps are traced and the conversation is kept");
+  const none = Object.assign(async () => ({ text: "x", truncated: false }), { limits: async () => ({}) }) as unknown as SampleFn;
+  let code = "";
+  try { await runSampleTurn("x", tools, [], none, "quick"); } catch (e) { code = (e as { code: string }).code; }
+  assert(code === "tools_unavailable" && /cannot run/.test(explainSampleError({ code })), "account mode: a viewer without page tools gets a clear message");
+}
 assert(/rejected/.test(explainError({ status: 401 })) && /Rate limit/.test(explainError({ status: 429 })), "errors are explained");
 console.log("OK: real-model loop (fake model)");

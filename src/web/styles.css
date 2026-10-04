@@ -240,3 +240,6 @@ button.primary:hover:not(:disabled) { box-shadow: 0 8px 26px rgba(124, 140, 255,
 :root[data-theme="light"] button.primary { box-shadow: 0 6px 18px rgba(79, 86, 214, 0.25); }
 :root[data-theme="light"] .dialog-back { background: rgba(20, 26, 46, 0.35); }
 .theme-btn { padding: 3px 10px; font-size: 0.78rem; }
+.dialog .option { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg-soft); }
+.dialog .option h3 { margin: 0; font-size: 0.95rem; }
+.dialog select { padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); font: inherit; }

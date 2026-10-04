@@ -12,7 +12,7 @@ function TurnCard({ trace }: { trace: TurnTrace }) {
         <span className="turn-no">#{trace.index + 1}</span> {trace.prompt}
       </h3>
       <p className="turn-meta">
-        {ms(trace.durationMs)} · {trace.tokens.input + trace.tokens.output} tokens{trace.real ? ` (real, ${trace.real.calls} model calls${trace.real.cacheReadTokens ? `, ${trace.real.cacheReadTokens} cached` : ""})` : ` · ${usd(trace.costUsd)}`}
+        {ms(trace.durationMs)} · {trace.real?.reported === false ? "tokens not reported" : `${trace.tokens.input + trace.tokens.output} tokens`}{trace.real && trace.real.reported !== false ? ` (real, ${trace.real.calls} model calls${trace.real.cacheReadTokens ? `, ${trace.real.cacheReadTokens} cached` : ""})` : ` · ${usd(trace.costUsd)}`}
       </p>
       {trace.steps.length === 0 ? (
         <p className="muted">No tool was called.</p>
@@ -48,14 +48,19 @@ export function TracePanel({ traces }: { traces: TurnTrace[] }) {
       <dl className="tiles">
         <div><dt>Turns</dt><dd>{sum.turns}</dd></div>
         <div><dt>Tool calls</dt><dd>{sum.toolCalls}</dd></div>
-        <div><dt>{sum.realTurns ? "Tokens" : "Tokens (est.)"}</dt><dd>{(sum.tokens.input + sum.tokens.output).toLocaleString("en-US")}</dd></div>
-        <div><dt>{sum.realTurns ? "Cost" : "Cost (illustrative)"}</dt><dd>{sum.realTurns ? "see your Anthropic console" : usd(sum.costUsd)}</dd></div>
+        <div><dt>{sum.realTurns ? "Tokens" : "Tokens (est.)"}</dt><dd>{sum.realTurns && !sum.reportedTurns ? "not reported" : (sum.tokens.input + sum.tokens.output).toLocaleString("en-US")}</dd></div>
+        <div><dt>{sum.realTurns ? "Cost" : "Cost (illustrative)"}</dt><dd>{sum.realTurns ? (sum.reportedTurns ? "see your Anthropic console" : "your Claude plan") : usd(sum.costUsd)}</dd></div>
         <div><dt>Waiting for humans</dt><dd>{ms(sum.humanWaitMs)}</dd></div>
         <div><dt>Failed calls</dt><dd>{sum.failedCalls}</dd></div>
       </dl>
-      {sum.realTurns > 0 && (
+      {sum.realTurns > sum.reportedTurns && (
         <p className="note">
-          {sum.realTurns} of {sum.turns} turns were answered by a real model: their token counts come from the API usage fields (sum of all model calls in the turn). Turns answered by the script still show estimates, and no cost is computed for real turns because no price list is bundled.
+          {sum.realTurns - sum.reportedTurns} of {sum.turns} turns were answered by Claude through your own Claude account: the platform does not report tokens or cost, and the usage counts against your plan.
+        </p>
+      )}
+      {sum.reportedTurns > 0 && (
+        <p className="note">
+          {sum.reportedTurns} of {sum.turns} turns were answered by a real model through an API key: their token counts come from the API usage fields (sum of all model calls in the turn). Turns answered by the script still show estimates, and no cost is computed for real turns because no price list is bundled.
         </p>
       )}
       <p className="note">

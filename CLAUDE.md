@@ -11,7 +11,7 @@ A portfolio project: an agent that operates a fictional ERP through an MCP serve
 
 ## Architecture
 
-- `src/core`: data (`data.ts`), state (`state.ts`), tool registry (`tools.ts`), `ToolClient` (`client.ts`), scripted agent (`agent.ts`), optional real-model loop (`llmAgent.ts`, tested with a fake model in `scripts/llm-check.ts`). No browser or Node APIs, so it runs in both.
+- `src/core`: data (`data.ts`), state (`state.ts`), tool registry (`tools.ts`), `ToolClient` (`client.ts`), scripted agent (`agent.ts`), optional real-model loops (`llmAgent.ts` with the visitor's API key, `sampleAgent.ts` with their Claude account inside an Artifact; tested with a fake model in `scripts/llm-check.ts`). No browser or Node APIs, so it runs in both.
 - `src/mcp/server.ts`: MCP server over stdio, built from the registry.
 - `src/web`: React chat, approval cards, tool-call log.
 - Tool kinds: `read`, `propose` (creates a pending proposal, changes nothing) and `write` (`decide_proposal`, the only way a change is applied, after a human decision).

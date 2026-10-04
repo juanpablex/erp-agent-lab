@@ -5,7 +5,8 @@ import { LocalToolClient } from "../core/client";
 import Anthropic from "@anthropic-ai/sdk";
 import { HELP, runTurn, type AgentTurn, type TraceStep } from "../core/agent";
 import type { Proposal } from "../core/state";
-import { buildTrace, buildRealTrace, withDecision, type TurnTrace } from "../core/trace";
+import { buildTrace, buildRealTrace, buildAccountTrace, withDecision, type TurnTrace } from "../core/trace";
+import { explainSampleError, getSample, runSampleTurn, type Tier, type Turn } from "../core/sampleAgent";
 import { SidePanel } from "./SidePanel";
 
 type Decision = { status: "approved" | "rejected"; queued: number };
@@ -116,6 +117,10 @@ export function App() {
   const [remembered, setRemembered] = useState(initial.current.remembered);
   const [dialog, setDialog] = useState(false);
   const history = useRef<History>([]);
+  const [account, setAccount] = useState(false);
+  const [tier, setTier] = useState<Tier>("quick");
+  const turns = useRef<Turn[]>([]);
+  const mode: "script" | "account" | "key" = account ? "account" : real ? "key" : "script";
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [traces, setTraces] = useState<TurnTrace[]>([]);
@@ -146,7 +151,12 @@ export function App() {
     try {
       let turn: AgentTurn;
       let trace: (i: number) => TurnTrace;
-      if (real) {
+      if (account) {
+        const sample = await getSample();
+        if (!sample) throw Object.assign(new Error("no sample"), { code: "capability_disabled" });
+        turn = await runSampleTurn(prompt, client.current, turns.current, sample, tier);
+        trace = (i) => buildAccountTrace(i, prompt, turn, startedAt);
+      } else if (real) {
         const llm = new Anthropic({ apiKey: real.apiKey, dangerouslyAllowBrowser: true });
         const r = await runLlmTurn(prompt, client.current, history.current, llm, real.model);
         turn = r.turn;
@@ -159,7 +169,7 @@ export function App() {
       setTraces((t) => [...t, trace(t.length)]);
       setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn, traceIndex: index, finishedAt: Date.now() }]);
     } catch (err) {
-      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: real ? `The real model could not answer. ${explainError(err)}` : `Something went wrong while answering: ${err instanceof Error ? err.message : String(err)}` }]);
+      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: account ? `The real model could not answer. ${explainSampleError(err)}` : real ? `The real model could not answer. ${explainError(err)}` : `Something went wrong while answering: ${err instanceof Error ? err.message : String(err)}` }]);
     }
     setBusy(false);
   }
@@ -192,6 +202,10 @@ export function App() {
         <RealModelDialog
           current={real}
           remembered={remembered}
+          accountActive={account}
+          tier={tier}
+          onUseAccount={(t) => { setTier(t); setAccount(true); turns.current = []; setDialog(false); }}
+          onBackToScript={() => { setAccount(false); turns.current = []; setDialog(false); }}
           onClose={() => setDialog(false)}
           onSave={(c, rem) => { saveConfig(c, rem); setReal(c); setRemembered(rem); history.current = []; setDialog(false); }}
           onRemove={() => { clearConfig(); setReal(null); setRemembered(false); history.current = []; setDialog(false); }}
@@ -203,11 +217,13 @@ export function App() {
           <p className="muted">Kettle Hill Roasters, a fictional coffee roastery</p>
         </div>
         <div className="head-right">
-          {real
-            ? <span className="badge live" title="A Claude model decides which tools to call, using your own API key from this browser.">Real model · {real.model} · your key</span>
+          {mode === "account"
+            ? <span className="badge live" title="A Claude model decides which tools to call, through your own Claude account.">Real model · your Claude account</span>
+            : mode === "key"
+            ? <span className="badge live" title="A Claude model decides which tools to call, using your own API key from this browser.">Real model · {real!.model} · your key</span>
             : <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>}
-          <button className="toggle" onClick={() => setDialog(true)}>{real ? "Model settings" : "Use a real model"}</button>
-          {real && <button className="toggle" onClick={() => { setReal(null); history.current = []; }}>Back to script</button>}
+          <button className="toggle" onClick={() => setDialog(true)}>{mode !== "script" ? "Model settings" : "Use a real model"}</button>
+          {mode !== "script" && <button className="toggle" onClick={() => { setReal(null); setAccount(false); history.current = []; turns.current = []; }}>Back to script</button>}
           <button className="toggle theme-btn" onClick={toggleTheme} aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}>{theme === "light" ? "☾ Dark" : "☀ Light"}</button>
           <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide panel" : "Show panel"}</button>
         </div>
