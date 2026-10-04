@@ -12,7 +12,9 @@ Everything here is invented: the company ("Kettle Hill Roasters", a coffee roast
 | --- | --- |
 | MCP server (`src/mcp/server.ts`) | Real. Standard MCP over stdio, usable from any MCP client. |
 | Tools, data model, approval flow (`src/core`) | Real. Shared by the MCP server and the browser demo. |
-| Web chat with approval cards and tool-call log | Real. |
+| Web chat with approval cards, tool-call log and trace panel | Real. |
+| Trace panel durations | Real: measured on each tool call and on the time a person takes to decide. |
+| Trace panel tokens and cost | **Simulated.** About 4 characters per token and illustrative prices that belong to no real model, because the agent is scripted. |
 | **The agent that answers in the chat** | **Scripted, not a language model.** It reads the intent of a message with simple rules and calls tools in a fixed order. It exists to exercise the tools and the approval flow at zero API cost. |
 
 The agent is behind a small `ToolClient` interface, so a model-driven loop can replace the script without touching the tools.
@@ -43,6 +45,7 @@ npm install
 npm run dev          # web demo on http://localhost:5173
 npm run mcp          # MCP server over stdio
 npm run mcp:smoke    # starts the server and exercises it like an MCP client
+npm test             # checks the arithmetic behind the trace panel
 npm run build        # production build of the web demo
 ```
 
@@ -70,14 +73,14 @@ You can also try it with the official inspector: `npx @modelcontextprotocol/insp
 src/
   core/        data model and fictional data, tool registry, ToolClient, scripted agent
   mcp/         MCP server (stdio) built from the tool registry
-  web/         React chat with approval cards and a tool-call log
-scripts/       MCP smoke test
+  web/         React chat, approval cards, tool-call log and trace panel
+scripts/       MCP smoke test and trace arithmetic checks
 ```
 
 ## Roadmap
 
-1. MCP server, chat and human approval (this version).
-2. Trace panel: every step, duration, and simulated token cost per conversation.
+1. MCP server, chat and human approval (done).
+2. Trace panel: every step with its duration, and simulated tokens and cost per conversation (done).
 3. Evals: prompts with expected tool calls, run automatically with a pass/fail table.
 4. Optional: a real language model behind the same `ToolClient`, voice input and generated UI.
 

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { LocalToolClient } from "../core/client";
 import { HELP, runTurn, type AgentTurn, type TraceStep } from "../core/agent";
 import type { Proposal } from "../core/state";
+import { buildTrace, withDecision, type TurnTrace } from "../core/trace";
+import { TracePanel } from "./TracePanel";
 
 type Decision = { status: "approved" | "rejected"; queued: number };
 
@@ -12,6 +14,8 @@ interface Msg {
   turn?: AgentTurn;
   decision?: Decision;
   extraSteps?: TraceStep[];
+  traceIndex?: number;
+  finishedAt?: number;
 }
 
 const SUGGESTIONS = [
@@ -106,6 +110,8 @@ export function App() {
   const [msgs, setMsgs] = useState<Msg[]>([{ id: 0, role: "agent", text: `Hi, I'm the operations agent of Kettle Hill Roasters. ${HELP}` }]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [traces, setTraces] = useState<TurnTrace[]>([]);
+  const [showTrace, setShowTrace] = useState(() => (typeof window === "undefined" ? true : window.matchMedia("(min-width: 900px)").matches));
   const seq = useRef(1);
   const end = useRef<HTMLDivElement>(null);
 
@@ -117,8 +123,11 @@ export function App() {
     setInput("");
     setBusy(true);
     setMsgs((m) => [...m, { id: seq.current++, role: "user", text: prompt }]);
+    const startedAt = Date.now();
     const turn = await runTurn(prompt, client.current);
-    setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn }]);
+    const index = traces.length;
+    setTraces((t) => [...t, buildTrace(t.length, prompt, turn, startedAt)]);
+    setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn, traceIndex: index, finishedAt: Date.now() }]);
     setBusy(false);
   }
 
@@ -127,7 +136,12 @@ export function App() {
     const started = performance.now();
     const args = { proposalId: proposal.id, decision };
     const res = (await client.current.callTool("decide_proposal", args)) as { status: Decision["status"]; queued: number };
-    const step: TraceStep = { id: Date.now(), tool: "decide_proposal", args, ok: true, durationMs: Math.round((performance.now() - started) * 10) / 10, preview: JSON.stringify(res) };
+    const json = JSON.stringify(res);
+    const step: TraceStep = { id: Date.now(), tool: "decide_proposal", kind: "write", args, ok: true, startMs: 0, durationMs: Math.round((performance.now() - started) * 10) / 10, resultChars: json.length, preview: json };
+    const msg = msgs.find((x) => x.id === msgId);
+    const humanStep: TraceStep = { id: Date.now() + 1, tool: "human_approval", kind: "human", args: { proposalId: proposal.id }, ok: true, startMs: 0, durationMs: 0, resultChars: 0, preview: `human chose to ${decision}` };
+    const waited = Date.now() - (msg?.finishedAt ?? Date.now());
+    if (msg?.traceIndex !== undefined) setTraces((t) => t.map((x) => (x.index === msg.traceIndex ? withDecision(withDecision(x, humanStep, waited), step, waited) : x)));
     setMsgs((m) => m.map((x) => (x.id === msgId ? { ...x, decision: { status: res.status, queued: res.queued }, extraSteps: [...(x.extraSteps ?? []), step] } : x)));
     setBusy(false);
   }
@@ -139,8 +153,14 @@ export function App() {
           <h1>ERP Agent Lab</h1>
           <p className="muted">Kettle Hill Roasters, a fictional coffee roastery</p>
         </div>
-        <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>
+        <div className="head-right">
+          <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>
+          <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide trace" : "Show trace"}</button>
+        </div>
       </header>
+
+      <div className={`body ${showTrace ? "with-trace" : ""}`}>
+        <div className="col-chat">
 
       <main className="chat" aria-live="polite">
         {msgs.map((m) => (
@@ -166,6 +186,9 @@ export function App() {
           <button className="primary" disabled={busy || !input.trim()}>Send</button>
         </form>
       </footer>
+        </div>
+        {showTrace && <TracePanel traces={traces} />}
+      </div>
     </div>
   );
 }

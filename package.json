@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "mcp": "tsx src/mcp/server.ts",
-    "mcp:smoke": "tsx scripts/mcp-smoke.ts"
+    "mcp:smoke": "tsx scripts/mcp-smoke.ts",
+    "test": "tsx scripts/trace-check.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",

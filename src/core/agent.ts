@@ -1,16 +1,23 @@
 import type { ToolClient } from "./client";
+import { findTool, type ToolKind } from "./tools";
 import type { Proposal } from "./state";
 
 export interface TraceStep {
   id: number;
   tool: string;
+  kind: ToolKind | "human";
   args: Record<string, unknown>;
   ok: boolean;
+  /** Milliseconds since the start of the turn when the call began. */
+  startMs: number;
   durationMs: number;
+  /** Size of the full JSON result, used to estimate tokens. */
+  resultChars: number;
   preview: string;
 }
 
 export interface AgentTurn {
+  durationMs: number;
   steps: TraceStep[];
   reply: string;
   table?: Record<string, string | number>[];
@@ -20,14 +27,16 @@ export interface AgentTurn {
 
 let stepSeq = 1;
 
-async function call(client: ToolClient, steps: TraceStep[], tool: string, args: Record<string, unknown>): Promise<any> {
+async function call(client: ToolClient, steps: TraceStep[], t0: number, tool: string, args: Record<string, unknown>): Promise<any> {
   const started = performance.now();
+  const base = { id: stepSeq++, tool, kind: (findTool(tool)?.kind ?? "read") as ToolKind, args, startMs: Math.round((started - t0) * 10) / 10 };
   try {
     const result = await client.callTool(tool, args);
-    steps.push({ id: stepSeq++, tool, args, ok: true, durationMs: Math.round((performance.now() - started) * 10) / 10, preview: JSON.stringify(result).slice(0, 160) });
+    const json = JSON.stringify(result);
+    steps.push({ ...base, ok: true, durationMs: Math.round((performance.now() - started) * 10) / 10, resultChars: json.length, preview: json.slice(0, 160) });
     return result;
   } catch (err) {
-    steps.push({ id: stepSeq++, tool, args, ok: false, durationMs: Math.round((performance.now() - started) * 10) / 10, preview: String(err) });
+    steps.push({ ...base, ok: false, durationMs: Math.round((performance.now() - started) * 10) / 10, resultChars: 0, preview: String(err) });
     throw err;
   }
 }
@@ -50,13 +59,19 @@ function daysFrom(prompt: string, fallback: number): number {
  * exposes the same ToolClient interface a real model-driven loop would use.
  */
 export async function runTurn(prompt: string, client: ToolClient): Promise<AgentTurn> {
+  const t0 = performance.now();
+  const turn = await plan(prompt, client, t0);
+  return { ...turn, durationMs: Math.round((performance.now() - t0) * 10) / 10 };
+}
+
+async function plan(prompt: string, client: ToolClient, t0: number): Promise<Omit<AgentTurn, "durationMs">> {
   const steps: TraceStep[] = [];
   const t = prompt.toLowerCase();
 
   if (/remind|chase|follow.?up|nudge|dun/.test(t)) {
-    const overdue = await call(client, steps, "list_overdue_invoices", { minDaysOverdue: 7, limit: 5 });
+    const overdue = await call(client, steps, t0, "list_overdue_invoices", { minDaysOverdue: 7, limit: 5 });
     if (overdue.total === 0) return { steps, reply: "There are no invoices more than 7 days overdue, so there is nothing to send." };
-    const proposal = (await call(client, steps, "propose_collection_reminders", { minDaysOverdue: 7 })) as Proposal;
+    const proposal = (await call(client, steps, t0, "propose_collection_reminders", { minDaysOverdue: 7 })) as Proposal;
     return {
       steps,
       proposal,
@@ -65,7 +80,7 @@ export async function runTurn(prompt: string, client: ToolClient): Promise<Agent
   }
 
   if (/overdue|unpaid|owe|late|invoice|receivable/.test(t)) {
-    const res = await call(client, steps, "list_overdue_invoices", { minDaysOverdue: 1, limit: 10 });
+    const res = await call(client, steps, t0, "list_overdue_invoices", { minDaysOverdue: 1, limit: 10 });
     return {
       steps,
       reply: `${res.total} invoices are overdue, ${res.totalAmount.toLocaleString("en-US")} in total. The oldest ones:`,
@@ -75,7 +90,7 @@ export async function runTurn(prompt: string, client: ToolClient): Promise<Agent
 
   if (/sale|revenue|sold|best.?sell/.test(t)) {
     const days = daysFrom(t, 30);
-    const res = await call(client, steps, "get_sales_summary", { days });
+    const res = await call(client, steps, t0, "get_sales_summary", { days });
     return {
       steps,
       reply: `In the last ${res.days} days there were ${res.orders} orders worth ${res.revenue.toLocaleString("en-US")} (average ${res.averageOrder.toLocaleString("en-US")}).`,
@@ -85,7 +100,7 @@ export async function runTurn(prompt: string, client: ToolClient): Promise<Agent
   }
 
   if (/stock|inventory|reorder|beans|running low/.test(t)) {
-    const res = await call(client, steps, "check_inventory", { belowReorderOnly: true });
+    const res = await call(client, steps, t0, "check_inventory", { belowReorderOnly: true });
     return {
       steps,
       reply: res.total ? `${res.total} coffees are below their reorder level:` : "Every coffee is above its reorder level.",
@@ -94,7 +109,7 @@ export async function runTurn(prompt: string, client: ToolClient): Promise<Agent
   }
 
   if (/order/.test(t)) {
-    const res = await call(client, steps, "list_orders", { days: daysFrom(t, 14), limit: 8 });
+    const res = await call(client, steps, t0, "list_orders", { days: daysFrom(t, 14), limit: 8 });
     return { steps, reply: `${res.total} orders in the period. The most recent:`, table: res.orders };
   }
 
