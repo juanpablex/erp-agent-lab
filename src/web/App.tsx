@@ -115,7 +115,11 @@ export function App() {
   const seq = useRef(1);
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [msgs]);
+  useEffect(() => {
+    // A block body on purpose: an effect must return nothing or a cleanup function, and some browsers and
+    // extensions make scrollIntoView return a value, which React would then try to call as a cleanup.
+    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [msgs]);
 
   async function send(text: string) {
     const prompt = text.trim();
