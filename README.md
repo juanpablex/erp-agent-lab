@@ -1,5 +1,9 @@
 # ERP Agent Lab
 
+[![Deploy](https://github.com/juanpablex/erp-agent-lab/actions/workflows/pages.yml/badge.svg)](https://github.com/juanpablex/erp-agent-lab/actions/workflows/pages.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Live demo](https://img.shields.io/badge/demo-live-5eead4)](https://juanpablex.github.io/erp-agent-lab/)
+
+![Preview of the app](docs/preview.jpg)
+
 An agent that operates a **fictional ERP** through an **MCP server**, with **human approval for every action that changes something**.
 
 Everything here is invented: the company ("Kettle Hill Roasters", a coffee roastery that sells to cafés), the customers, the invoices and the numbers. Any resemblance to real businesses is a coincidence.
