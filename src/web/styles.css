@@ -137,3 +137,13 @@ button:disabled { opacity: 0.5; cursor: default; }
 .checks li.ok { color: var(--ok); }
 .checks li.bad { color: var(--no); }
 .check-detail { color: var(--ink-2); }
+
+.badge.live { border-color: var(--accent); color: var(--accent); }
+.dialog-back { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.dialog { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 20px; max-width: 480px; width: 100%; display: grid; gap: 12px; max-height: 90vh; overflow: auto; }
+.dialog h2 { margin: 0; font-size: 1.1rem; }
+.dialog p { margin: 0; font-size: 0.9rem; }
+.dialog label { display: grid; gap: 4px; font-size: 0.85rem; }
+.dialog label.check { display: flex; gap: 8px; align-items: flex-start; }
+.dialog input[type="password"], .dialog select { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }

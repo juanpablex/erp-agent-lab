@@ -27,7 +27,7 @@ export interface AgentTurn {
 
 let stepSeq = 1;
 
-async function call(client: ToolClient, steps: TraceStep[], t0: number, tool: string, args: Record<string, unknown>): Promise<any> {
+export async function call(client: ToolClient, steps: TraceStep[], t0: number, tool: string, args: Record<string, unknown>): Promise<any> {
   const started = performance.now();
   const base = { id: stepSeq++, tool, kind: (findTool(tool)?.kind ?? "read") as ToolKind, args, startMs: Math.round((started - t0) * 10) / 10 };
   try {

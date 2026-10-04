@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { clearConfig, loadConfig, RealModelDialog, saveConfig, type RealConfig } from "./RealModel";
+import { explainError, runLlmTurn, type History } from "../core/llmAgent";
 import { LocalToolClient } from "../core/client";
+import Anthropic from "@anthropic-ai/sdk";
 import { HELP, runTurn, type AgentTurn, type TraceStep } from "../core/agent";
 import type { Proposal } from "../core/state";
-import { buildTrace, withDecision, type TurnTrace } from "../core/trace";
+import { buildTrace, buildRealTrace, withDecision, type TurnTrace } from "../core/trace";
 import { SidePanel } from "./SidePanel";
 
 type Decision = { status: "approved" | "rejected"; queued: number };
@@ -108,6 +111,11 @@ function ProposalCard({ proposal, decision, onDecide, busy }: { proposal: Propos
 export function App() {
   const client = useRef(new LocalToolClient());
   const [msgs, setMsgs] = useState<Msg[]>([{ id: 0, role: "agent", text: `Hi, I'm the operations agent of Kettle Hill Roasters. ${HELP}` }]);
+  const initial = useRef(loadConfig());
+  const [real, setReal] = useState<RealConfig | null>(initial.current.config);
+  const [remembered, setRemembered] = useState(initial.current.remembered);
+  const [dialog, setDialog] = useState(false);
+  const history = useRef<History>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [traces, setTraces] = useState<TurnTrace[]>([]);
@@ -129,12 +137,22 @@ export function App() {
     setMsgs((m) => [...m, { id: seq.current++, role: "user", text: prompt }]);
     const startedAt = Date.now();
     try {
-      const turn = await runTurn(prompt, client.current);
+      let turn: AgentTurn;
+      let trace: (i: number) => TurnTrace;
+      if (real) {
+        const llm = new Anthropic({ apiKey: real.apiKey, dangerouslyAllowBrowser: true });
+        const r = await runLlmTurn(prompt, client.current, history.current, llm, real.model);
+        turn = r.turn;
+        trace = (i) => buildRealTrace(i, prompt, r.turn, startedAt, r.usage);
+      } else {
+        turn = await runTurn(prompt, client.current);
+        trace = (i) => buildTrace(i, prompt, turn, startedAt);
+      }
       const index = traces.length;
-      setTraces((t) => [...t, buildTrace(t.length, prompt, turn, startedAt)]);
+      setTraces((t) => [...t, trace(t.length)]);
       setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: turn.reply, turn, traceIndex: index, finishedAt: Date.now() }]);
     } catch (err) {
-      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: `Something went wrong while answering: ${err instanceof Error ? err.message : String(err)}` }]);
+      setMsgs((m) => [...m, { id: seq.current++, role: "agent", text: real ? `The real model could not answer. ${explainError(err)}` : `Something went wrong while answering: ${err instanceof Error ? err.message : String(err)}` }]);
     }
     setBusy(false);
   }
@@ -163,13 +181,26 @@ export function App() {
 
   return (
     <div className="app">
+      {dialog && (
+        <RealModelDialog
+          current={real}
+          remembered={remembered}
+          onClose={() => setDialog(false)}
+          onSave={(c, rem) => { saveConfig(c, rem); setReal(c); setRemembered(rem); history.current = []; setDialog(false); }}
+          onRemove={() => { clearConfig(); setReal(null); setRemembered(false); history.current = []; setDialog(false); }}
+        />
+      )}
       <header>
         <div>
           <h1>ERP Agent Lab</h1>
           <p className="muted">Kettle Hill Roasters, a fictional coffee roastery</p>
         </div>
         <div className="head-right">
-          <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>
+          {real
+            ? <span className="badge live" title="A Claude model decides which tools to call, using your own API key from this browser.">Real model · {real.model} · your key</span>
+            : <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>}
+          <button className="toggle" onClick={() => setDialog(true)}>{real ? "Model settings" : "Use a real model"}</button>
+          {real && <button className="toggle" onClick={() => { setReal(null); history.current = []; }}>Back to script</button>}
           <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide panel" : "Show panel"}</button>
         </div>
       </header>

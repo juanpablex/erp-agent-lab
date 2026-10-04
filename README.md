@@ -15,7 +15,8 @@ Everything here is invented: the company ("Kettle Hill Roasters", a coffee roast
 | Web chat with approval cards, tool-call log and trace panel | Real. |
 | Evals (`src/core/evals.ts`) | Real: 16 cases for routing, safety and the approval flow, run by `npm run evals`, in CI and in the demo. One case is a documented known gap. |
 | Trace panel durations | Real: measured on each tool call and on the time a person takes to decide. |
-| Trace panel tokens and cost | **Simulated.** About 4 characters per token and illustrative prices that belong to no real model, because the agent is scripted. |
+| Real-model mode (optional) | **Real, bring your own key.** A Claude model drives the same tools in a tool-use loop. You paste your own Anthropic API key; requests go from your browser straight to the API and are billed to you. The site has no server. The model is never offered `decide_proposal`, so it can only propose. Token counts in the trace come from the API usage fields. |
+| Trace panel tokens and cost (scripted mode) | **Simulated.** About 4 characters per token and illustrative prices that belong to no real model, because the agent is scripted. |
 | **The agent that answers in the chat** | **Scripted, not a language model.** It reads the intent of a message with simple rules and calls tools in a fixed order. It exists to exercise the tools and the approval flow at zero API cost. |
 
 The agent is behind a small `ToolClient` interface, so a model-driven loop can replace the script without touching the tools.
@@ -84,7 +85,7 @@ scripts/       MCP smoke test, trace arithmetic checks and the evals runner
 1. MCP server, chat and human approval (done).
 2. Trace panel: every step with its duration, and simulated tokens and cost per conversation (done).
 3. Evals: cases with expected tool calls and safety checks, run automatically with a pass/fail table (done).
-4. Optional, needs API credit: a real language model behind the same `ToolClient`, voice input and generated UI.
+4. Done: optional real-model mode with your own key. Next: voice input and generated UI.
 
 ## License
 

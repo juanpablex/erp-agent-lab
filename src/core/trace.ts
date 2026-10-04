@@ -1,5 +1,6 @@
 import type { AgentTurn, TraceStep } from "./agent";
 import { TOOLS } from "./tools";
+import type { LlmUsage } from "./llmAgent";
 
 /**
  * Pricing used to turn token estimates into a cost. These numbers are ILLUSTRATIVE:
@@ -25,6 +26,8 @@ export interface TurnTrace {
   costUsd: number;
   /** How long the turn waited for a human decision, when it had an approval step. */
   humanWaitMs?: number;
+  /** Set when a real model answered: usage is reported by the API, not estimated. */
+  real?: { model: string; calls: number; cacheReadTokens: number };
 }
 
 export function costOf(tokens: { input: number; output: number }): number {
@@ -43,6 +46,16 @@ export function buildTrace(index: number, prompt: string, turn: AgentTurn, start
 }
 
 /** Adds the human decision (and how long the person took) to a turn that was waiting for approval. */
+/** Trace for a turn answered by a real model: tokens come from the API usage fields. Cost is not computed (no price list is bundled). */
+export function buildRealTrace(index: number, prompt: string, turn: AgentTurn, startedAt: number, usage: LlmUsage): TurnTrace {
+  return {
+    index, prompt, startedAt, durationMs: turn.durationMs, steps: turn.steps,
+    tokens: { input: usage.inputTokens + usage.cacheReadTokens, output: usage.outputTokens },
+    costUsd: 0,
+    real: { model: usage.model, calls: usage.calls, cacheReadTokens: usage.cacheReadTokens },
+  };
+}
+
 export function withDecision(trace: TurnTrace, step: TraceStep, humanWaitMs: number): TurnTrace {
   return { ...trace, steps: [...trace.steps, step], humanWaitMs };
 }
@@ -54,6 +67,7 @@ export interface ConversationSummary {
   tokens: { input: number; output: number };
   costUsd: number;
   humanWaitMs: number;
+  realTurns: number;
 }
 
 export function summarize(traces: TurnTrace[]): ConversationSummary {
@@ -66,5 +80,6 @@ export function summarize(traces: TurnTrace[]): ConversationSummary {
     tokens,
     costUsd: traces.reduce((a, t) => a + t.costUsd, 0),
     humanWaitMs: traces.reduce((a, t) => a + (t.humanWaitMs ?? 0), 0),
+    realTurns: traces.filter((t) => t.real).length,
   };
 }

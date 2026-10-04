@@ -6,12 +6,12 @@ A portfolio project: an agent that operates a fictional ERP through an MCP serve
 
 - All data is fictional and invented: the company, customers, emails (`example.com` only), amounts. No real people, companies, brands or data.
 - No code, names, rules or data taken from any employer or client project.
-- Be honest in the README and UI: the chat agent is **scripted, not a language model**. Never present it as a real model.
+- Be honest in the README and UI: the default chat agent is **scripted, not a language model**. The real-model mode (`src/core/llmAgent.ts`) is optional, uses the visitor's own API key (never ship or commit a key) and must be labeled as such. Never expose `decide_proposal` to the model.
 - Everything written in the repo (code, comments, UI text, README, commit messages) is in English. Reply to the user in Spanish.
 
 ## Architecture
 
-- `src/core`: data (`data.ts`), state (`state.ts`), tool registry (`tools.ts`), `ToolClient` (`client.ts`), scripted agent (`agent.ts`). No browser or Node APIs, so it runs in both.
+- `src/core`: data (`data.ts`), state (`state.ts`), tool registry (`tools.ts`), `ToolClient` (`client.ts`), scripted agent (`agent.ts`), optional real-model loop (`llmAgent.ts`, tested with a fake model in `scripts/llm-check.ts`). No browser or Node APIs, so it runs in both.
 - `src/mcp/server.ts`: MCP server over stdio, built from the registry.
 - `src/web`: React chat, approval cards, tool-call log.
 - Tool kinds: `read`, `propose` (creates a pending proposal, changes nothing) and `write` (`decide_proposal`, the only way a change is applied, after a human decision).

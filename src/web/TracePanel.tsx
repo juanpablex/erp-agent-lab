@@ -12,7 +12,7 @@ function TurnCard({ trace }: { trace: TurnTrace }) {
         <span className="turn-no">#{trace.index + 1}</span> {trace.prompt}
       </h3>
       <p className="turn-meta">
-        {ms(trace.durationMs)} · {trace.tokens.input + trace.tokens.output} tokens · {usd(trace.costUsd)}
+        {ms(trace.durationMs)} · {trace.tokens.input + trace.tokens.output} tokens{trace.real ? ` (real, ${trace.real.calls} model calls${trace.real.cacheReadTokens ? `, ${trace.real.cacheReadTokens} cached` : ""})` : ` · ${usd(trace.costUsd)}`}
       </p>
       {trace.steps.length === 0 ? (
         <p className="muted">No tool was called.</p>
@@ -48,11 +48,16 @@ export function TracePanel({ traces }: { traces: TurnTrace[] }) {
       <dl className="tiles">
         <div><dt>Turns</dt><dd>{sum.turns}</dd></div>
         <div><dt>Tool calls</dt><dd>{sum.toolCalls}</dd></div>
-        <div><dt>Tokens (est.)</dt><dd>{(sum.tokens.input + sum.tokens.output).toLocaleString("en-US")}</dd></div>
-        <div><dt>Cost (illustrative)</dt><dd>{usd(sum.costUsd)}</dd></div>
+        <div><dt>{sum.realTurns ? "Tokens" : "Tokens (est.)"}</dt><dd>{(sum.tokens.input + sum.tokens.output).toLocaleString("en-US")}</dd></div>
+        <div><dt>{sum.realTurns ? "Cost" : "Cost (illustrative)"}</dt><dd>{sum.realTurns ? "see your Anthropic console" : usd(sum.costUsd)}</dd></div>
         <div><dt>Waiting for humans</dt><dd>{ms(sum.humanWaitMs)}</dd></div>
         <div><dt>Failed calls</dt><dd>{sum.failedCalls}</dd></div>
       </dl>
+      {sum.realTurns > 0 && (
+        <p className="note">
+          {sum.realTurns} of {sum.turns} turns were answered by a real model: their token counts come from the API usage fields (sum of all model calls in the turn). Turns answered by the script still show estimates, and no cost is computed for real turns because no price list is bundled.
+        </p>
+      )}
       <p className="note">
         Durations are real: they are measured on the tool calls. Tokens and cost are <strong>simulated</strong>, because the agent is scripted: about 4 characters per token, at
         ${ILLUSTRATIVE_PRICING.inputPerMillion} / ${ILLUSTRATIVE_PRICING.outputPerMillion} per million input / output tokens, which are not the prices of any real model.
