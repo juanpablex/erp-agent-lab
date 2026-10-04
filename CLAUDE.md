@@ -18,12 +18,13 @@ A portfolio project: an agent that operates a fictional ERP through an MCP serve
 
 ## Commands
 
-`npm run dev`, `npm run mcp`, `npm run mcp:smoke`, `npm test`, `npm run typecheck`, `npm run build`.
+`npm run dev`, `npm run mcp`, `npm run mcp:smoke`, `npm run evals`, `npm test`, `npm run typecheck`, `npm run build`.
 
 ## Working style
 
 - Be efficient with tokens; no screenshots unless asked.
 - Before pushing, run `npm run typecheck`, `npm test`, `npm run build` and `npm run mcp:smoke`.
 - Trace panel (`src/core/trace.ts`, `src/web/TracePanel.tsx`): durations are real, tokens and cost are simulated and must stay labeled as such.
-- Roadmap: evals, optional real-model mode (needs API credit, keep it off by default).
+- Evals (`src/core/evals.ts`): every behavior change to the agent or tools needs a case. Known limitations go in with a `knownGap`, never by weakening a check. CI fails on a failing case and on a known gap that starts passing.
+- Roadmap: optional real-model mode (needs API credit, keep it off by default).
 - Commits use the author identity configured in this repo (Juan Pablo) with a `Co-Authored-By` trailer for Claude.

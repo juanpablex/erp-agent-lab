@@ -3,7 +3,7 @@ import { LocalToolClient } from "../core/client";
 import { HELP, runTurn, type AgentTurn, type TraceStep } from "../core/agent";
 import type { Proposal } from "../core/state";
 import { buildTrace, withDecision, type TurnTrace } from "../core/trace";
-import { TracePanel } from "./TracePanel";
+import { SidePanel } from "./SidePanel";
 
 type Decision = { status: "approved" | "rejected"; queued: number };
 
@@ -155,7 +155,7 @@ export function App() {
         </div>
         <div className="head-right">
           <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>
-          <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide trace" : "Show trace"}</button>
+          <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide panel" : "Show panel"}</button>
         </div>
       </header>
 
@@ -187,7 +187,7 @@ export function App() {
         </form>
       </footer>
         </div>
-        {showTrace && <TracePanel traces={traces} />}
+        {showTrace && <SidePanel traces={traces} />}
       </div>
     </div>
   );

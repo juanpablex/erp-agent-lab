@@ -68,7 +68,7 @@ async function plan(prompt: string, client: ToolClient, t0: number): Promise<Omi
   const steps: TraceStep[] = [];
   const t = prompt.toLowerCase();
 
-  if (/remind|chase|follow.?up|nudge|dun/.test(t)) {
+  if (/remind|chase|follow.?up|nudge|\bdun/.test(t)) {
     const overdue = await call(client, steps, t0, "list_overdue_invoices", { minDaysOverdue: 7, limit: 5 });
     if (overdue.total === 0) return { steps, reply: "There are no invoices more than 7 days overdue, so there is nothing to send." };
     const proposal = (await call(client, steps, t0, "propose_collection_reminders", { minDaysOverdue: 7 })) as Proposal;
@@ -79,7 +79,7 @@ async function plan(prompt: string, client: ToolClient, t0: number): Promise<Omi
     };
   }
 
-  if (/overdue|unpaid|owe|late|invoice|receivable/.test(t)) {
+  if (/overdue|unpaid|\bowe|past due|invoice|receivable/.test(t)) {
     const res = await call(client, steps, t0, "list_overdue_invoices", { minDaysOverdue: 1, limit: 10 });
     return {
       steps,

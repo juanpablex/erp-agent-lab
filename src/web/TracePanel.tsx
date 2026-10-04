@@ -43,7 +43,7 @@ function TurnCard({ trace }: { trace: TurnTrace }) {
 export function TracePanel({ traces }: { traces: TurnTrace[] }) {
   const sum = summarize(traces);
   return (
-    <aside className="trace-panel" aria-label="Trace panel">
+    <div className="side-content">
       <h2>Trace</h2>
       <dl className="tiles">
         <div><dt>Turns</dt><dd>{sum.turns}</dd></div>
@@ -58,6 +58,6 @@ export function TracePanel({ traces }: { traces: TurnTrace[] }) {
         ${ILLUSTRATIVE_PRICING.inputPerMillion} / ${ILLUSTRATIVE_PRICING.outputPerMillion} per million input / output tokens, which are not the prices of any real model.
       </p>
       {traces.length === 0 ? <p className="muted">Ask the agent something to see its trace here.</p> : [...traces].reverse().map((t) => <TurnCard key={t.index} trace={t} />)}
-    </aside>
+    </div>
   );
 }

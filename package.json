@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "mcp": "tsx src/mcp/server.ts",
     "mcp:smoke": "tsx scripts/mcp-smoke.ts",
-    "test": "tsx scripts/trace-check.ts"
+    "test": "tsx scripts/trace-check.ts && tsx scripts/run-evals.ts",
+    "evals": "tsx scripts/run-evals.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",
