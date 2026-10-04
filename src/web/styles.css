@@ -1,27 +1,21 @@
 :root {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --ink: #14181f;
-  --ink-2: #4a5362;
-  --line: #dde1e8;
-  --accent: #3b4cca;
-  --accent-ink: #ffffff;
-  --warn: #9a5b00;
-  --warn-bg: #fff6e3;
-  --ok: #17663a;
-  --ok-bg: #e8f6ee;
-  --no: #8a2b2b;
-  --no-bg: #fbeaea;
+  --bg: #0b0d1a;
+  --bg-soft: #12152a;
+  --surface: #171b33;
+  --surface-hi: #1e2342;
+  --ink: #f2f4ff;
+  --ink-2: #9aa3c7;
+  --line: rgba(255, 255, 255, 0.09);
+  --accent: #5eead4;
+  --accent-2: #7c8cff;
+  --accent-ink: #04201c;
+  --grad: linear-gradient(135deg, #5eead4, #7c8cff);
+  --warn: #fbbf24; --warn-bg: rgba(251, 191, 36, 0.1);
+  --ok: #4ade80; --ok-bg: rgba(74, 222, 128, 0.1);
+  --no: #fb7185; --no-bg: rgba(251, 113, 133, 0.1);
+  --radius: 16px;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1218; --surface: #181c24; --ink: #eef1f6; --ink-2: #aab3c2; --line: #2a303b;
-    --accent: #8d9bff; --accent-ink: #0f1218; --warn: #f0b95a; --warn-bg: #2a2111;
-    --ok: #6fd39a; --ok-bg: #112619; --no: #f09a9a; --no-bg: #2a1515;
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -147,3 +141,67 @@ button:disabled { opacity: 0.5; cursor: default; }
 .dialog label.check { display: flex; gap: 8px; align-items: flex-start; }
 .dialog input[type="password"], .dialog select { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
 .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ---- Look and feel (matches the Invoice Agent app): dark, soft glows, gradient accent, small motion ---- */
+body { background: var(--bg); position: relative; overflow-x: hidden; }
+body::before, body::after { content: ""; position: fixed; z-index: -1; width: 520px; height: 520px; border-radius: 50%; pointer-events: none; }
+body::before { top: -180px; left: -140px; background: radial-gradient(circle, rgba(124, 140, 255, 0.28), transparent 70%); }
+body::after { bottom: -200px; right: -160px; background: radial-gradient(circle, rgba(94, 234, 212, 0.18), transparent 70%); }
+h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+header { padding-block: 20px 10px; }
+.badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; font-weight: 600; color: var(--ink); }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.badge.live::before { background: var(--ok); }
+.badge.live { color: var(--ink); border-color: rgba(94, 234, 212, 0.45); }
+.toggle { background: var(--surface); transition: border-color 0.2s, color 0.2s, transform 0.15s; }
+.toggle:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+.msg { border-radius: var(--radius); padding: 12px 16px; animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.msg.agent { border-top-left-radius: 6px; }
+.msg.user { border-top-right-radius: 6px; background: var(--grad); color: var(--accent-ink); font-weight: 600; box-shadow: 0 6px 24px rgba(94, 234, 212, 0.18); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.table-wrap { border-radius: 12px; background: var(--bg-soft); }
+th { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+.bar-track { height: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.bar-fill { border-radius: 999px; background: var(--grad); transform-origin: left; animation: grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes grow { from { transform: scaleX(0); } }
+
+.proposal { border-radius: var(--radius); padding: 14px; box-shadow: 0 0 0 1px var(--warn) inset, 0 8px 28px rgba(251, 191, 36, 0.08); border-color: transparent; }
+.proposal.approved { box-shadow: 0 0 0 1px var(--ok) inset, 0 8px 28px rgba(74, 222, 128, 0.1); }
+.proposal.rejected { box-shadow: 0 0 0 1px var(--no) inset; }
+.steps summary { transition: color 0.2s; }
+.steps summary:hover { color: var(--accent); }
+
+footer { border-top-color: var(--line); }
+input { background: var(--bg-soft); border-radius: 999px; padding: 12px 18px; transition: border-color 0.2s, box-shadow 0.2s; }
+input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.18); }
+button { border-radius: 999px; transition: transform 0.15s, border-color 0.2s, background 0.2s, box-shadow 0.2s; }
+button:hover:not(:disabled) { border-color: rgba(94, 234, 212, 0.55); }
+button:active:not(:disabled) { transform: scale(0.96); }
+button.primary { background: var(--grad); color: var(--accent-ink); font-weight: 700; box-shadow: 0 6px 20px rgba(94, 234, 212, 0.2); }
+button.primary:hover:not(:disabled) { box-shadow: 0 8px 26px rgba(124, 140, 255, 0.35); }
+.chips button { background: var(--surface); padding: 6px 12px; }
+.chips button:hover:not(:disabled) { background: var(--surface-hi); }
+
+.side { border-radius: 20px; background: rgba(23, 27, 51, 0.85); backdrop-filter: blur(10px); }
+.tabs button { border-radius: 20px 20px 0 0; }
+.tabs button[aria-selected="true"] { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.tiles div { background: var(--bg-soft); border-radius: 12px; padding: 8px 12px; }
+.tiles dd { font-size: 1.1rem; }
+.tl-track { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.tl-bar { background: var(--grad); }
+.tl-bar.kind-propose { background: var(--warn); }
+.tl-bar.kind-write, .tl-bar.kind-human { background: var(--ok); }
+.turn-card { animation: rise 0.3s both; }
+
+.dialog-back { background: rgba(5, 7, 16, 0.65); backdrop-filter: blur(6px); }
+.dialog { border-radius: 22px; background: var(--surface); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5); animation: rise 0.25s both; }
+.dialog input[type="password"], .dialog select { background: var(--bg-soft); border-radius: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .msg, .turn-card, .dialog, .bar-fill { animation: none; }
+  button, input, .toggle { transition: none; }
+}
