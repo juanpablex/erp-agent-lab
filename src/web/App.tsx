@@ -120,6 +120,13 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [traces, setTraces] = useState<TurnTrace[]>([]);
   const [showTrace, setShowTrace] = useState(() => (typeof window === "undefined" ? true : window.matchMedia("(min-width: 900px)").matches));
+  const [theme, setTheme] = useState<"light" | "dark">(() => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"));
+  function toggleTheme() {
+    const next = theme === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch { /* storage blocked: the choice lasts for this page only */ }
+    setTheme(next);
+  }
   const seq = useRef(1);
   const end = useRef<HTMLDivElement>(null);
 
@@ -201,6 +208,7 @@ export function App() {
             : <span className="badge" title="The tools are real and also available over MCP. The agent follows a script and does not use a language model.">Scripted agent · fictional data</span>}
           <button className="toggle" onClick={() => setDialog(true)}>{real ? "Model settings" : "Use a real model"}</button>
           {real && <button className="toggle" onClick={() => { setReal(null); history.current = []; }}>Back to script</button>}
+          <button className="toggle theme-btn" onClick={toggleTheme} aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}>{theme === "light" ? "☾ Dark" : "☀ Light"}</button>
           <button className="toggle" onClick={() => setShowTrace((v) => !v)} aria-pressed={showTrace}>{showTrace ? "Hide panel" : "Show panel"}</button>
         </div>
       </header>

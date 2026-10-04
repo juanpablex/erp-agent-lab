@@ -13,6 +13,12 @@
   --warn: #fbbf24; --warn-bg: rgba(251, 191, 36, 0.1);
   --ok: #4ade80; --ok-bg: rgba(74, 222, 128, 0.1);
   --no: #fb7185; --no-bg: rgba(251, 113, 133, 0.1);
+  --hover: rgba(255, 255, 255, 0.04);
+  --track: rgba(255, 255, 255, 0.07);
+  --side-bg: rgba(23, 27, 51, 0.85);
+  --glow-a: rgba(124, 140, 255, 0.28);
+  --glow-b: rgba(94, 234, 212, 0.18);
+  --shadow: rgba(0, 0, 0, 0.5);
   --radius: 16px;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
@@ -145,8 +151,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 /* ---- Look and feel (matches the Invoice Agent app): dark, soft glows, gradient accent, small motion ---- */
 body { background: var(--bg); position: relative; overflow-x: hidden; }
 body::before, body::after { content: ""; position: fixed; z-index: -1; width: 520px; height: 520px; border-radius: 50%; pointer-events: none; }
-body::before { top: -180px; left: -140px; background: radial-gradient(circle, rgba(124, 140, 255, 0.28), transparent 70%); }
-body::after { bottom: -200px; right: -160px; background: radial-gradient(circle, rgba(94, 234, 212, 0.18), transparent 70%); }
+body::before { top: -180px; left: -140px; background: radial-gradient(circle, var(--glow-a), transparent 70%); }
+body::after { bottom: -200px; right: -160px; background: radial-gradient(circle, var(--glow-b), transparent 70%); }
 h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 header { padding-block: 20px 10px; }
 .badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; font-weight: 600; color: var(--ink); }
@@ -164,8 +170,8 @@ header { padding-block: 20px 10px; }
 .table-wrap { border-radius: 12px; background: var(--bg-soft); }
 th { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
 tbody tr { transition: background 0.15s; }
-tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
-.bar-track { height: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+tbody tr:hover { background: var(--hover); }
+.bar-track { height: 12px; border-radius: 999px; background: var(--track); }
 .bar-fill { border-radius: 999px; background: var(--grad); transform-origin: left; animation: grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @keyframes grow { from { transform: scaleX(0); } }
 
@@ -186,22 +192,51 @@ button.primary:hover:not(:disabled) { box-shadow: 0 8px 26px rgba(124, 140, 255,
 .chips button { background: var(--surface); padding: 6px 12px; }
 .chips button:hover:not(:disabled) { background: var(--surface-hi); }
 
-.side { border-radius: 20px; background: rgba(23, 27, 51, 0.85); backdrop-filter: blur(10px); }
+.side { border-radius: 20px; background: var(--side-bg); backdrop-filter: blur(10px); }
 .tabs button { border-radius: 20px 20px 0 0; }
 .tabs button[aria-selected="true"] { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
 .tiles div { background: var(--bg-soft); border-radius: 12px; padding: 8px 12px; }
 .tiles dd { font-size: 1.1rem; }
-.tl-track { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.tl-track { height: 8px; border-radius: 999px; background: var(--track); }
 .tl-bar { background: var(--grad); }
 .tl-bar.kind-propose { background: var(--warn); }
 .tl-bar.kind-write, .tl-bar.kind-human { background: var(--ok); }
 .turn-card { animation: rise 0.3s both; }
 
 .dialog-back { background: rgba(5, 7, 16, 0.65); backdrop-filter: blur(6px); }
-.dialog { border-radius: 22px; background: var(--surface); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5); animation: rise 0.25s both; }
+.dialog { border-radius: 22px; background: var(--surface); box-shadow: 0 24px 80px var(--shadow); animation: rise 0.25s both; }
 .dialog input[type="password"], .dialog select { background: var(--bg-soft); border-radius: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .msg, .turn-card, .dialog, .bar-fill { animation: none; }
   button, input, .toggle { transition: none; }
 }
+
+/* Light theme: chosen with the toggle (or the system setting the first time) */
+:root[data-theme="light"] {
+  --bg: #f3f5fb;
+  --bg-soft: #eaeef8;
+  --surface: #ffffff;
+  --surface-hi: #f0f3fb;
+  --ink: #141a2e;
+  --ink-2: #566080;
+  --line: rgba(20, 26, 46, 0.13);
+  --accent: #0d8f80;
+  --accent-2: #4f56d6;
+  --accent-ink: #ffffff;
+  --grad: linear-gradient(135deg, #0d9488, #4f56d6);
+  --warn: #9a5b00; --warn-bg: rgba(217, 119, 6, 0.1);
+  --ok: #17663a; --ok-bg: rgba(22, 163, 74, 0.1);
+  --no: #b4233b; --no-bg: rgba(225, 29, 72, 0.08);
+  --hover: rgba(20, 26, 46, 0.04);
+  --track: rgba(20, 26, 46, 0.09);
+  --side-bg: rgba(255, 255, 255, 0.85);
+  --glow-a: rgba(79, 86, 214, 0.16);
+  --glow-b: rgba(13, 148, 136, 0.14);
+  --shadow: rgba(20, 26, 46, 0.25);
+  color-scheme: light;
+}
+:root[data-theme="light"] .msg.user { box-shadow: 0 6px 20px rgba(79, 86, 214, 0.22); }
+:root[data-theme="light"] button.primary { box-shadow: 0 6px 18px rgba(79, 86, 214, 0.25); }
+:root[data-theme="light"] .dialog-back { background: rgba(20, 26, 46, 0.35); }
+.theme-btn { padding: 3px 10px; font-size: 0.78rem; }
